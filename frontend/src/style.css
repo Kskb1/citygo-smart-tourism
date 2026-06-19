@@ -2031,6 +2031,18 @@ pre {
   line-height: 1.6;
 }
 
+.plan-form .el-form-item {
+  min-width: 220px;
+}
+
+.city-validation-ok {
+  width: 100%;
+  margin: 6px 0 0;
+  color: var(--success);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 @media (max-width: 1200px) {
   .hotel-query-grid {
     grid-template-columns: repeat(3, minmax(160px, 1fr));

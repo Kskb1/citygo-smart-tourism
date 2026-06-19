@@ -1,6 +1,8 @@
 package com.citygo.tourism.controller;
 
 import com.citygo.tourism.exception.TripPayloadTooLargeException;
+import com.citygo.tourism.exception.CityValidationException;
+import com.citygo.tourism.exception.PlanningValidationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,25 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(CityValidationException.class)
+    public ResponseEntity<Map<String, Object>> cityValidation(CityValidationException e) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("code", e.code());
+        body.put("message", e.getMessage());
+        body.put("field", e.field());
+        body.put("input", e.input());
+        body.put("suggestions", e.suggestions());
+        return ResponseEntity.status(e.status()).body(body);
+    }
+
+    @ExceptionHandler(PlanningValidationException.class)
+    public ResponseEntity<Map<String, Object>> planningValidation(PlanningValidationException e) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("code", e.code());
+        body.put("message", e.getMessage());
+        return ResponseEntity.status(e.status()).body(body);
+    }
+
     @ExceptionHandler(TripPayloadTooLargeException.class)
     public ResponseEntity<Map<String, Object>> tripPayloadTooLarge(TripPayloadTooLargeException e) {
         Map<String, Object> body = new LinkedHashMap<>();

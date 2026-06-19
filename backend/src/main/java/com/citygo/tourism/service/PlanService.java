@@ -17,6 +17,7 @@ import com.citygo.tourism.dto.SpotSearchData;
 import com.citygo.tourism.dto.TrainSearchResponse;
 import com.citygo.tourism.dto.TransportPlanDTO;
 import com.citygo.tourism.dto.WeatherDTO;
+import com.citygo.tourism.exception.PlanningValidationException;
 import com.citygo.tourism.provider.AmapProvider;
 import com.citygo.tourism.provider.TrainProvider;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -62,6 +63,10 @@ public class PlanService {
         List<SpotCardDTO> destinationSelectedSpots = destinationSpots(request, selectedSpots);
         List<SpotCardDTO> crossCitySpots = crossCitySpots(request, selectedSpots);
         List<SpotCardDTO> planSpots = mergeSpots(destinationSelectedSpots, autoSpots);
+        if (planSpots.isEmpty()) {
+            throw new PlanningValidationException("NO_PLANNABLE_POI",
+                    "已识别该城市，但暂未获取到可用于规划的真实景点数据。请稍后重试，或先在目的地探索页加入真实景点。");
+        }
         WeatherDTO weather = dataObject(data.get("weather"), WeatherDTO.class);
         RouteDTO route = dataObject(data.get("route"), RouteDTO.class);
         TransportPlanDTO outbound = outboundTransport(request, train);

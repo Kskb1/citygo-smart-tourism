@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page">
     <div class="page-heading">
       <h1>智能规划</h1>
@@ -6,10 +6,16 @@
     </div>
 
     <el-card class="filter-card">
-      <el-form :model="form" label-width="90px">
+      <el-form :model="form" label-width="90px" class="plan-form">
         <div class="toolbar">
-          <el-form-item label="出发地"><el-input v-model="form.fromCity" /></el-form-item>
-          <el-form-item label="目的地"><el-input v-model="form.toCity" placeholder="请输入主旅行城市" /></el-form-item>
+          <el-form-item label="出发地" :error="cityErrors.origin">
+            <el-input v-model="form.fromCity" placeholder="例如：成都" @blur="validateCityField('origin')" @input="clearCityValidation('origin')" />
+            <p v-if="cityValidation.origin?.valid" class="city-validation-ok">已识别：{{ cityValidation.origin.normalizedCityName }}</p>
+          </el-form-item>
+          <el-form-item label="目的地" :error="cityErrors.destination">
+            <el-input v-model="form.toCity" placeholder="请输入完整主旅行城市，例如：武汉" @blur="validateCityField('destination')" @input="clearCityValidation('destination')" />
+            <p v-if="cityValidation.destination?.valid" class="city-validation-ok">已识别：{{ cityValidation.destination.normalizedCityName }}</p>
+          </el-form-item>
           <el-form-item label="出发日期"><el-date-picker v-model="form.departureDate" value-format="YYYY-MM-DD" /></el-form-item>
           <el-form-item label="天数"><el-input-number v-model="form.days" :min="1" /></el-form-item>
           <el-form-item label="人数"><el-input-number v-model="form.people" :min="1" /></el-form-item>
@@ -70,7 +76,7 @@
             <el-input-number v-model="form.roomCount" :min="1" />
           </el-form-item>
         </div>
-        <el-button type="primary" :loading="loading" @click="generate">生成规划</el-button>
+        <el-button type="primary" :loading="loading || validatingCities" :disabled="loading || validatingCities" @click="generate">生成规划</el-button>
       </el-form>
     </el-card>
 
@@ -369,6 +375,9 @@ const loading = ref(false)
 const savingTrip = ref(false)
 const savedTripId = ref(null)
 const error = ref('')
+const validatingCities = ref(false)
+const cityErrors = ref({ origin: '', destination: '' })
+const cityValidation = ref({ origin: null, destination: null })
 
 function applyQuery() {
   const toCity = route.query.toCity
@@ -434,17 +443,92 @@ function isCrossCitySpot(spot) {
   return Boolean(toCity && spotCity && toCity !== spotCity)
 }
 
+function cityInput(field) {
+  return field === 'origin' ? form.value.fromCity : form.value.toCity
+}
+
+function setCityInput(field, value) {
+  if (field === 'origin') {
+    form.value.fromCity = value
+  } else {
+    form.value.toCity = value
+  }
+}
+
+function clearCityValidation(field) {
+  cityErrors.value[field] = ''
+  cityValidation.value[field] = null
+}
+
+function applyCityError(data, fallbackField = 'destination') {
+  const field = data?.field === 'origin' ? 'origin' : data?.field === 'destination' ? 'destination' : fallbackField
+  cityErrors.value[field] = data?.message || '无法识别该城市，请输入完整城市名称。'
+  cityValidation.value[field] = null
+  result.value = null
+  savedTripId.value = null
+  return true
+}
+
+async function validateCityField(field) {
+  const input = cityInput(field)
+  if (!String(input || '').trim()) {
+    applyCityError({ field, message: field === 'origin' ? '请输入完整出发城市名称。' : '请输入完整目的城市名称。' }, field)
+    return null
+  }
+  try {
+    const { data } = await api.get('/plans/validate-city', { params: { input, field } })
+    cityErrors.value[field] = ''
+    cityValidation.value[field] = data
+    return data
+  } catch (e) {
+    applyCityError(e?.response?.data, field)
+    return null
+  }
+}
+
+async function validatePlanningCities() {
+  validatingCities.value = true
+  error.value = ''
+  try {
+    const [origin, destination] = await Promise.all([
+      validateCityField('origin'),
+      validateCityField('destination')
+    ])
+    if (!origin?.valid || !destination?.valid) {
+      result.value = null
+      error.value = '请先修正出发地和目的地城市后再生成规划。'
+      return null
+    }
+    return { origin, destination }
+  } finally {
+    validatingCities.value = false
+  }
+}
+
 async function generate() {
-  loading.value = true
+  if (loading.value || validatingCities.value) return
   error.value = ''
   savedTripId.value = null
+  const validatedCities = await validatePlanningCities()
+  if (!validatedCities) return
+  loading.value = true
   try {
     const payload = {
       ...form.value,
+      fromCity: validatedCities.origin.normalizedCityName,
+      toCity: validatedCities.destination.normalizedCityName,
       selectedSpots: selectedSpots.value.map(({ photoUrl, fetchedAt, sourceName, realData, id, ...spot }) => spot)
     }
     result.value = (await api.post('/plans/generate', payload)).data
+    setCityInput('origin', validatedCities.origin.normalizedCityName)
+    setCityInput('destination', validatedCities.destination.normalizedCityName)
   } catch (e) {
+    const response = e?.response?.data
+    if (response?.field === 'origin' || response?.field === 'destination') {
+      applyCityError(response)
+      error.value = response.message
+      return
+    }
     error.value = e?.response?.data?.message || e?.message || '生成规划失败，请检查后端服务是否已启动。'
   } finally {
     loading.value = false
