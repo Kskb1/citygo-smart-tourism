@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql:3306/citygo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${SPRING_DATASOURCE_USERNAME:citygo_user}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  sql:
+    init:
+      mode: never
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+citygo:
+  security:
+    jwt-secret: ${JWT_SECRET}
+    token-ttl-hours: ${JWT_TTL_HOURS:24}
+    admin-username: ${CITYGO_ADMIN_USERNAME:admin}
+    admin-password: ${CITYGO_ADMIN_PASSWORD}
+    admin-email: ${CITYGO_ADMIN_EMAIL:admin@example.com}
+    demo-users-enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.citygo.tourism: INFO

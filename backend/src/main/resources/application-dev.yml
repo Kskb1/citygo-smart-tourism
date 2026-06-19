@@ -1,0 +1,12 @@
+spring:
+  flyway:
+    enabled: false
+
+citygo:
+  security:
+    demo-users-enabled: true
+    token-ttl-hours: ${JWT_TTL_HOURS:24}
+
+logging:
+  level:
+    com.citygo.tourism: INFO

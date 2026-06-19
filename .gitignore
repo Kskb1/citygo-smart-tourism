@@ -1,0 +1,44 @@
+# Local API credentials
+.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+!.env.local.example
+!.env.production.example
+frontend/.env.local
+backend/.env
+
+# Backend build output
+backend/target/
+target/
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+node_modules/
+dist/
+
+# Database backups
+backups/
+*.sql
+*.sql.gz
+*.dump
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.idea/
+.vscode/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db

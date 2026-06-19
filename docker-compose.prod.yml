@@ -1,0 +1,9 @@
+services:
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CITYGO_DEMO_USERS_ENABLED: "false"
+
+  frontend:
+    ports:
+      - "${HTTP_PORT:-80}:80"
